@@ -1,0 +1,75 @@
+import axios from "axios";
+import React, { useState } from "react";
+
+const FileUpload = () => {
+  const [file, setFile] = useState(null);
+  const [fileUrl, setFileUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [fileName, setFileName] = useState("");
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    setFile(selectedFile);
+    setFileName(selectedFile.name);
+    setError(""); // Clear any previous errors
+  };
+
+  const uploadFile = async () => {
+    if (!file) {
+      setError(⚠️ Please select a file to upload.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
+      const res = await axios.post(`${API_URL}/api/files/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setFileUrl(res.data.fileUrl);
+      setFileName(""); // Clear file name after upload
+      setFile(null); // Reset file input
+    } catch (err) {
+      setError(err.response?.data?.error || "❌ Failed to upload file. Please try again.");
+      console.error("Upload error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: "400px", margin: "auto", textAlign: "center", padding: "20px" }}>
+      <input type="file" onChange={handleFileChange} disabled={loading} />
+      {fileName && <p>📂 Selected File: <strong>{fileName}</strong></p>}
+
+      <button onClick={uploadFile} disabled={loading} style={{ marginTop: "10px" }}>
+        {loading ? "⏳ Uploading..." : "⬆️ Upload"}
+      </button>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {fileUrl && (
+        <div style={{ marginTop: "20px" }}>
+          <p>✅ File uploaded successfully!</p>
+          {fileUrl.endsWith(".pdf") ? (
+            <iframe src={fileUrl} width="100%" height="400" title="Uploaded File"></iframe>
+          ) : (
+            <img src={fileUrl} alt="Uploaded File" style={{ maxWidth: "100%", maxHeight: "300px" }} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default FileUpload;
